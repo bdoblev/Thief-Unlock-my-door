@@ -1,0 +1,134 @@
+#include <Servo.h>
+
+Servo myservo;
+
+//Declare the regular buttons... 
+const int b1 = 2;   
+const int b2 = 3;
+const int b3 = 4;
+const int RB = 5; //...with the "password reset" button
+
+//Declare the leds
+const int ledC = 9;
+const int ledE = 8;
+
+//Declare how many numbers include...
+int combination[4]; //... the password and...
+int userInput[4]; //... the trials.
+
+//To difference the action of writting the password and trying it, we declare 2 different states
+int accion = 1;
+//Declare a variable that starts in 0 and finnish in 4 the number of numbers that can compress the password and the trials
+int pwcount = 0;
+int password = 0; 
+//Declare the buttons' states
+int buttonstate1 = 0;
+int buttonstate2 = 0;
+int buttonstate3 = 0;
+int ResetButton = 0;
+
+
+
+void setup() {
+  //show the different main points that have to include Arduino, teaching where it can find them and how use them.
+  myservo.attach(7);
+  pinMode(b1, INPUT);
+  pinMode(b2, INPUT);
+  pinMode(b3, INPUT);
+  pinMode(RB, INPUT);
+  pinMode (ledC, OUTPUT);
+  pinMode(ledE, OUTPUT);
+  Serial.begin(9600);
+  accion = 1;
+}
+
+void loop() {
+  buttonstate1 = digitalRead(b1);
+  buttonstate2 = digitalRead(b2);
+  buttonstate3 = digitalRead(b3);
+  ResetButton = digitalRead(RB);
+
+  myservo.write(210); //Main position for the servo to concord with the regular door locker.
+
+  //These "actions" that were commented before which will change the different two states of use.
+  switch (accion) {
+
+    //While the "Reset Button" is pressed, the others can be pressed configurating the password...
+    case 1:
+      if (ResetButton == HIGH && buttonstate1 == HIGH ) {
+        combination[password] = '1';
+        password++;
+        delay(300);
+        Serial.print('1');
+      }
+      if (ResetButton == HIGH && buttonstate2 == HIGH ) {
+        combination[password] = '2';
+        password++;
+        delay(300);
+        Serial.print('2');
+      } if (ResetButton == HIGH && buttonstate3 == HIGH ) {
+        combination[password] = '3';
+        password++;
+        delay(300);
+        Serial.print('3');
+      }
+
+      //... until this code gets 4 numbers to change the state. 
+      if (password == 4) {
+        
+        password = 0;
+        accion = 2;
+      }
+
+      break;
+
+    case 2:
+      // The buttons will be writtting the password... 
+      if (buttonstate1 == HIGH) {
+        userInput[pwcount] = '1';
+        pwcount++; // ...summing up a count of pushed each time they are pressed...
+        delay(300);
+        Serial.print('1');
+      }
+      if (buttonstate2 == HIGH) {
+        userInput[pwcount] = '2';
+        pwcount++;
+        delay(300);
+        Serial.print('2');
+      }
+      if (buttonstate3 == HIGH) {
+        userInput[pwcount] = '3';
+        pwcount++;
+        delay(300);
+        Serial.print('3');
+      }
+
+      // ...from the first trial until the 4th...
+      for (int n = 0; n <= 4; n++) {
+
+        //... comparing each number of the arrays to prove if it's correct...
+        if (userInput[0] == combination[0] && userInput[1] == combination[1] && userInput[2] == combination[2] && userInput[3] == combination[3] && pwcount >= 4) {
+          myservo.write(30); //... moving the servo
+          digitalWrite (ledC, HIGH); //...turning on the green led
+          digitalWrite (ledE, LOW);
+          Serial.println("unlocked"); 
+          delay(5000);
+          pwcount = 0; //...
+          n = 0;
+
+
+        }
+        else {
+          if (userInput[n] != combination[n] && pwcount >= 4) {
+            Serial.println("Denied");
+            digitalWrite (ledE, HIGH);
+            digitalWrite (ledC, LOW);
+            
+            pwcount = 0;
+            n = 0;
+          }
+        }
+      }
+      break;
+  }
+}
