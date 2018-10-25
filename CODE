@@ -1,9 +1,11 @@
 #include <Servo.h>
 
+#define PASS_LEN 4
+
 Servo myservo;
 
-//Declare the regular buttons... 
-const int b1 = 2;   
+//Declare the regular buttons...
+const int b1 = 2;
 const int b2 = 3;
 const int b3 = 4;
 const int RB = 5; //...with the "password reset" button
@@ -20,7 +22,7 @@ int userInput[4]; //... the trials.
 int accion = 1;
 //Declare a variable that starts in 0 and finnish in 4 the number of numbers that can compress the password and the trials
 int pwcount = 0;
-int password = 0; 
+int password = 0;
 //Declare the buttons' states
 int buttonstate1 = 0;
 int buttonstate2 = 0;
@@ -73,9 +75,9 @@ void loop() {
         Serial.print('3');
       }
 
-      //... until this code gets 4 numbers to change the state. 
-      if (password == 4) {
-        
+      //... until this code gets 4 numbers to change the state.
+      if (password == PASS_LEN) {
+
         password = 0;
         accion = 2;
       }
@@ -83,7 +85,7 @@ void loop() {
       break;
 
     case 2:
-      // The buttons will be writtting the password... 
+      // The buttons will be writtting the password...
       if (buttonstate1 == HIGH) {
         userInput[pwcount] = '1';
         pwcount++; // ...summing up a count of pushed each time they are pressed...
@@ -103,32 +105,39 @@ void loop() {
         Serial.print('3');
       }
 
-      // ...from the first trial until the 4th...
-      for (int n = 0; n <= 4; n++) {
+      if (pwcount >= PASS_LEN) {
 
-        //... comparing each number of the arrays to prove if it's correct...
-        if (userInput[0] == combination[0] && userInput[1] == combination[1] && userInput[2] == combination[2] && userInput[3] == combination[3] && pwcount >= 4) {
-          myservo.write(30); //... moving the servo
-          digitalWrite (ledC, HIGH); //...turning on the green led
-          digitalWrite (ledE, LOW);
-          Serial.println("unlocked"); 
+        //declare the new variables...
+        int right = 0; // ...to count the right pulses
+        int n = pwcount; // ... and to count the pulses
+        
+        // ...from the first trial until the last comparing the User inputs with the real combination
+        for (int n = 0; n <= PASS_LEN; n++) {
+          if (userInput[n] == combination[n])
+            right++; // and if they concide, it will summ up a "right"
+        }
+        //if the number of "right" is the same than the number of numbers of the combination...
+        if (right >= PASS_LEN) {
+          myservo.write(30); //... it moves the servo
+          digitalWrite (ledC, HIGH); //... it turns on the green led
+          digitalWrite (ledE, LOW); //... it turns off the red led
+          Serial.println("unlocked");
           delay(5000);
-          pwcount = 0; //...
+          pwcount = 0; //... and turns in 0 the user inputs count
+          n = 0; 
+        }
+        // if the number of "right" pulses is lower...
+        else if (right < PASS_LEN) {
+
+          Serial.println("Denied");
+          digitalWrite (ledE, HIGH); //... it turns on the red led
+          digitalWrite (ledC, LOW); //... it turns off the green led
+
+          pwcount = 0;
           n = 0;
-
-
         }
-        else {
-          if (userInput[n] != combination[n] && pwcount >= 4) {
-            Serial.println("Denied");
-            digitalWrite (ledE, HIGH);
-            digitalWrite (ledC, LOW);
-            
-            pwcount = 0;
-            n = 0;
-          }
-        }
+
+        break;
       }
-      break;
   }
 }
